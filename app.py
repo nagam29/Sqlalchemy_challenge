@@ -117,8 +117,21 @@ def tobs():
 
     return jsonify(all_tobs)
 
+@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<start>/<end>")
+def analysis(start=None, end=None):
+    if not end:
+        result=session.query(func.min(Measurement.tobs, func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+            filter(Measurement.date>=start).all()
+    
+        result=list(np.ravel(result))
+        return jsonify(result)
 
-
+    result=session.query(func.min(Measurement.tobs, func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+        filter(Measurement.date>=start).filter(Measurement.date<=end).all()
+    
+    result=list(np.ravel(result))
+    return jsonify(result)
 
 if __name__ == "__main__":
     app.run(debug=True)
