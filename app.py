@@ -49,7 +49,7 @@ def welcome():
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/2017-01-01<br/>"
-        f"/api/v1.0/2017-01-10"
+        f"/api/v1.0/2017-01-01/2017-01-10"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -99,7 +99,6 @@ def tobs():
 
     # Query the dates and temperature observations of the most active station for the last year of data.
     """Return a list of temperature of the most active station"""
-    # Query all passengers
     tobs2 = session.query(Measurement.date, Measurement.tobs).filter(Measurement.station == 'USC00519281').all()
 
     session.close()
@@ -120,18 +119,20 @@ def tobs():
 @app.route("/api/v1.0/<start>")
 @app.route("/api/v1.0/<start>/<end>")
 def analysis(start=None, end=None):
-    if not end:
-        result=session.query(func.min(Measurement.tobs, func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
-            filter(Measurement.date>=start).all()
-    
-        result=list(np.ravel(result))
-        return jsonify(result)
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
 
-    result=session.query(func.min(Measurement.tobs, func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
-        filter(Measurement.date>=start).filter(Measurement.date<=end).all()
+    # When given the start only, calculate TMIN, TAVG, and TMAX for all dates greater than and equal to the start date.
+    if not end:
+        result1=session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).filter(Measurement.date>=start).all()
+
+        start_result=list(np.ravel(result1))
+        return jsonify(start_result)
+    #When given the start and the end date, calculate the TMIN, TAVG, and TMAX for dates between the start and end date inclusive.
+    result2=session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).filter(Measurement.date>=start).filter(Measurement.date<=end).all()
     
-    result=list(np.ravel(result))
-    return jsonify(result)
+    result2=list(np.ravel(result2))
+    return jsonify(result2)
 
 if __name__ == "__main__":
     app.run(debug=True)
